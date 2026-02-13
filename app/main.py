@@ -3,9 +3,9 @@ from __future__ import annotations
 import app.models 
 from app.db import init_db, save_transactions
 from app.ingest import load_commbank_csv
+from app.reports import print_summary, print_monthly_summary, print_all_transaction
 from pathlib import Path
 import shutil
-
 
 IMPORTS_DIR = Path("data/imports")
 ARCHIVE_DIR = Path("data/archive")
@@ -46,5 +46,9 @@ def main():
         
     print(f"Total inserted={total_inserted}, Total skipped={total_skipped}")
 
+    
 if __name__ == "__main__":
     main()
+    print_summary()
+    print_monthly_summary()
+    print_all_transaction()
