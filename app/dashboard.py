@@ -3,6 +3,8 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 from sqlalchemy import select, func
+from datetime import datetime, time, timedelta, date
+
 
 from app.db import SessionLocal
 from app.models import Transaction
@@ -10,16 +12,22 @@ from app.models import Transaction
 st.set_page_config(page_title="Commbank Finance Tracker", layout="wide")
 st.title("Finance Tracker")
 
-
 @st.cache_data
-def load_summary():
+def load_summary(start: date, end: date):
+    start_dt = datetime.combine(start, time.min)
+    end_dt_excl = datetime.combine(end + timedelta(days=1), time.min)
+
     with SessionLocal() as session:
         income = session.scalar(
-            select(func.sum(Transaction.amount)).where(Transaction.amount > 0)
+            select(func.sum(Transaction.amount))
+            .where(Transaction.amount > 0)
+            .where(Transaction.date >= start_dt, Transaction.date < end_dt_excl)
         ) or 0.0
 
         expenses = session.scalar(
-            select(func.sum(Transaction.amount)).where(Transaction.amount < 0)
+            select(func.sum(Transaction.amount))
+            .where(Transaction.amount < 0)
+            .where(Transaction.date >= start_dt, Transaction.date < end_dt_excl)
         ) or 0.0
 
         net = income + expenses
@@ -27,13 +35,17 @@ def load_summary():
 
 
 @st.cache_data
-def load_monthly():
+def load_monthly(start: date, end: date):
+    start_dt = datetime.combine(start, time.min)
+    end_dt_excl = datetime.combine(end + timedelta(days=1), time.min)
+
     with SessionLocal() as session:
         stmt = (
             select(
                 func.strftime("%Y-%m", Transaction.date).label("month"),
                 func.sum(Transaction.amount).label("total"),
             )
+            .where(Transaction.date >= start_dt, Transaction.date < end_dt_excl)
             .group_by("month")
             .order_by("month")
         )
@@ -44,7 +56,9 @@ def load_monthly():
 
 
 @st.cache_data
-def load_recent(limit: int = 25):
+def load_recent(start: date, end: date, limit: int = 50):
+    start_dt = datetime.combine(start, time.min)
+    end_dt_excl = datetime.combine(end + timedelta(days=1), time.min)
     with SessionLocal() as session:
         stmt = (
             select(
@@ -53,6 +67,7 @@ def load_recent(limit: int = 25):
                 Transaction.description_raw,
                 Transaction.cumulative_balance,
             )
+            .where(Transaction.date >= start_dt, Transaction.date < end_dt_excl)
             .order_by(Transaction.date.desc())
             .limit(limit)
         )
@@ -62,8 +77,37 @@ def load_recent(limit: int = 25):
         rows, columns=["date", "amount", "description", "cumulative_balance"]
     )
 
+@st.cache_data
+def get_date_bounds() -> tuple[date | None, date | None]:
+    with SessionLocal() as session:
+        min_dt = session.scalar(select(func.min(Transaction.date)))
+        max_dt = session.scalar(select(func.max(Transaction.date)))
+    if min_dt is None or max_dt is None:
+        return None, None
+    return min_dt.date(), max_dt.date()
 
-income, expenses, net = load_summary()
+
+min_d, max_d = get_date_bounds()
+
+if min_d is None or max_d is None:
+    st.warning("No transactions found in the database yet.")
+    st.stop()
+
+st.sidebar.header("Filters")
+start_date, end_date = st.sidebar.date_input(
+    "Date range",
+    value=(min_d, max_d),
+    min_value=min_d,
+    max_value=max_d,
+)
+
+if isinstance(start_date, date) and not isinstance(end_date, date):
+    end_date = start_date
+
+income, expenses, net = load_summary(start_date, end_date)
+monthly_df = load_monthly(start_date, end_date)
+recent_df = load_recent(start_date, end_date, limit=50)
+
 
 c1, c2, c3 = st.columns(3)
 c1.metric("Total income", f"${income:,.2f}")
@@ -72,11 +116,10 @@ c3.metric("Net change", f"${net:,.2f}")
 
 st.divider()
 
-monthly_df = load_monthly()
 st.subheader("Monthly net total")
 st.line_chart(monthly_df.set_index("month")["total"])
 
 st.divider()
 
 st.subheader("Recent transactions")
-st.dataframe(load_recent(50), use_container_width=True)
+st.dataframe(recent_df, use_container_width=True)
