@@ -74,5 +74,37 @@ st.bar_chart(spending_df.set_index("category")["total"])
 
 st.divider()
 
+# --- What changed vs previous period ---
+prev_start, prev_end = core.previous_window(start_date, end_date)
+prev_df = load_all(prev_start, prev_end)
+deltas_df = core.category_deltas(all_df, prev_df)
+
+st.subheader("What changed vs previous period")
+st.caption(f"Comparing {start_date} – {end_date} against {prev_start} – {prev_end}")
+
+increases = deltas_df[deltas_df["delta"] > 0].head(5).copy()
+decreases = deltas_df[deltas_df["delta"] < 0].tail(5).copy()
+
+increases["change"] = increases["delta"].apply(lambda x: f"+${x:,.2f}")
+decreases["change"] = decreases["delta"].apply(lambda x: f"-${abs(x):,.2f}")
+
+col1, col2 = st.columns(2)
+with col1:
+    st.markdown("**Top increases**")
+    st.dataframe(
+        increases[["category", "change"]].reset_index(drop=True),
+        use_container_width=True,
+        hide_index=True,
+    )
+with col2:
+    st.markdown("**Top decreases**")
+    st.dataframe(
+        decreases[["category", "change"]].reset_index(drop=True),
+        use_container_width=True,
+        hide_index=True,
+    )
+
+st.divider()
+
 st.subheader("Recent transactions")
 st.dataframe(recent_df, use_container_width=True)
