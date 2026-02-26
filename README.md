@@ -159,7 +159,7 @@ Streamlit will provide a local URL (usually `http://localhost:8501`).
 
 ## 📁 Data Requirements
 
-The app expects transaction-level data with a consistent schema.
+Currently optimised for Commbank Netbank CSV export. The app expects transaction-level data with a consistent schema.
 
 ### Recommended Columns
 
