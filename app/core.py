@@ -163,7 +163,6 @@ def transfer_reason(description: str, tail_words: int = 3) -> str:
 
     return " ".join(words[-tail_words:])
 
-
 # ---------------------------------------------------------------------------
 # Categorization helpers
 # ---------------------------------------------------------------------------
@@ -321,13 +320,11 @@ _NOISE_TOKEN_RECUR = re.compile(
 _EXTRA_SPACE = re.compile(r"\s+")
 
 def _normalize_merchant(description: str) -> str:
-    """Derive a stable merchant name from a raw transaction description."""
-    s = _PAYMENT_PREFIX_RECUR.sub("", (description or "").strip())
+    s = _PAYMENT_PREFIX_RECUR.sub("", (description or "").strip()).lower()
     s = _RE_MASKED.sub(" ", s)
     s = _NOISE_TOKEN_RECUR.sub(" ", s)
-    s = _RE_NONALPHA.sub(" ", s)
+    s = re.sub(r"[^a-z\s]", " ", s)   # or update your _RE_NONALPHA globally
     s = _EXTRA_SPACE.sub(" ", s).strip()
-    # Use first two words as stable label
     words = s.split()
     return " ".join(words[:2]).title() if words else "Unknown"
 
