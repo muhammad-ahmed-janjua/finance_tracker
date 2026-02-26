@@ -60,3 +60,28 @@ def get_monthly_totals(start: date, end: date) -> "pd.DataFrame":
         rows = session.execute(stmt).all()
 
     return pd.DataFrame(rows, columns=["month", "total"])
+
+
+def get_transactions(start: date, end: date, limit: int | None = None) -> "pd.DataFrame":
+    """Return transactions in [start, end], newest first.
+    Columns: date, amount, description, cumulative_balance."""
+    import pandas as pd
+
+    start_dt = datetime.combine(start, time.min)
+    end_dt_excl = datetime.combine(end + timedelta(days=1), time.min)
+
+    with SessionLocal() as session:
+        stmt = (
+            select(
+                Transaction.date,
+                Transaction.amount,
+                Transaction.description_raw,
+                Transaction.cumulative_balance,
+            )
+            .where(Transaction.date >= start_dt, Transaction.date < end_dt_excl)
+            .order_by(Transaction.date.desc())
+            .limit(limit)
+        )
+        rows = session.execute(stmt).all()
+
+    return pd.DataFrame(rows, columns=["date", "amount", "description", "cumulative_balance"])

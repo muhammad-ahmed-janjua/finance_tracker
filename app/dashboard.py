@@ -2,11 +2,8 @@ from __future__ import annotations
 
 import pandas as pd
 import streamlit as st
-from sqlalchemy import select, func
-from datetime import datetime, time, timedelta, date
+from datetime import date
 
-from app.db import SessionLocal
-from app.models import Transaction
 from app import queries
 
 st.set_page_config(page_title="Commbank Finance Tracker", layout="wide")
@@ -24,25 +21,8 @@ def load_monthly(start: date, end: date):
 
 @st.cache_data
 def load_recent(start: date, end: date, limit: int = 50):
-    start_dt = datetime.combine(start, time.min)
-    end_dt_excl = datetime.combine(end + timedelta(days=1), time.min)
-    with SessionLocal() as session:
-        stmt = (
-            select(
-                Transaction.date,
-                Transaction.amount,
-                Transaction.description_raw,
-                Transaction.cumulative_balance,
-            )
-            .where(Transaction.date >= start_dt, Transaction.date < end_dt_excl)
-            .order_by(Transaction.date.desc())
-            .limit(limit)
-        )
-        rows = session.execute(stmt).all()
+    return queries.get_transactions(start, end, limit=limit)
 
-    return pd.DataFrame(
-        rows, columns=["date", "amount", "description", "cumulative_balance"]
-    )
 
 @st.cache_data
 def get_date_bounds() -> tuple[date | None, date | None]:
