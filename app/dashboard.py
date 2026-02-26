@@ -106,5 +106,19 @@ with col2:
 
 st.divider()
 
+# --- Recurring commitments ---
+st.subheader("Recurring commitments")
+commitments_df = core.detect_recurring_commitments(all_df)
+
+if commitments_df.empty:
+    st.caption("No recurring commitments detected. Try a wider date range (3+ months recommended).")
+else:
+    display = commitments_df.copy()
+    display["median_amount"] = display["median_amount"].apply(lambda x: f"${x:,.2f}")
+    display["confidence"]    = display["confidence"].apply(lambda x: f"{int(x * 100)}%")
+    st.dataframe(display, use_container_width=True, hide_index=True)
+
+st.divider()
+
 st.subheader("Recent transactions")
 st.dataframe(recent_df, use_container_width=True)
