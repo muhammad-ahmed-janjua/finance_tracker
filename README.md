@@ -215,3 +215,27 @@ Planned improvements:
 - Better empty states and responsiveness  
 
 ---
+
+## 📸 Screenshots
+
+### Overview Tab
+
+![Overview](assets/overview.png)
+
+---
+
+### Insights Tab
+
+![Insights](assets/insights.png)
+
+---
+
+### Debug Tab
+
+![Debug](assets/debug.png)
+
+---
+
+### True Spend Mode Enabled
+
+![True Spend](assets/true-spend.png)
