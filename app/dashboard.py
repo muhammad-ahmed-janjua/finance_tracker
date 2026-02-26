@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 from datetime import date
 
-from app import queries
+from app import queries, core
 
 st.set_page_config(page_title="Commbank Finance Tracker", layout="wide")
 st.title("Finance Tracker")
@@ -22,6 +22,11 @@ def load_monthly(start: date, end: date):
 @st.cache_data
 def load_recent(start: date, end: date, limit: int = 50):
     return queries.get_transactions(start, end, limit=limit)
+
+
+@st.cache_data
+def load_all(start: date, end: date) -> pd.DataFrame:
+    return core.add_categories(queries.get_transactions(start, end))
 
 
 @st.cache_data
@@ -48,8 +53,8 @@ if isinstance(start_date, date) and not isinstance(end_date, date):
 
 income, expenses, net = load_summary(start_date, end_date)
 monthly_df = load_monthly(start_date, end_date)
-recent_df = load_recent(start_date, end_date, limit=50)
-
+all_df = load_all(start_date, end_date)
+recent_df = core.add_categories(load_recent(start_date, end_date, limit=50))
 
 c1, c2, c3 = st.columns(3)
 c1.metric("Total income", f"${income:,.2f}")
@@ -60,6 +65,12 @@ st.divider()
 
 st.subheader("Monthly net total")
 st.line_chart(monthly_df.set_index("month")["total"])
+
+st.divider()
+
+st.subheader("Spending by category")
+spending_df = core.spending_by_category(all_df)
+st.bar_chart(spending_df.set_index("category")["total"])
 
 st.divider()
 
