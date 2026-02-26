@@ -7,30 +7,14 @@ from datetime import datetime, time, timedelta, date
 
 from app.db import SessionLocal
 from app.models import Transaction
+from app import queries
 
 st.set_page_config(page_title="Commbank Finance Tracker", layout="wide")
 st.title("Finance Tracker")
 
 @st.cache_data
 def load_summary(start: date, end: date):
-    start_dt = datetime.combine(start, time.min)
-    end_dt_excl = datetime.combine(end + timedelta(days=1), time.min)
-
-    with SessionLocal() as session:
-        income = session.scalar(
-            select(func.sum(Transaction.amount))
-            .where(Transaction.amount > 0)
-            .where(Transaction.date >= start_dt, Transaction.date < end_dt_excl)
-        ) or 0.0
-
-        expenses = session.scalar(
-            select(func.sum(Transaction.amount))
-            .where(Transaction.amount < 0)
-            .where(Transaction.date >= start_dt, Transaction.date < end_dt_excl)
-        ) or 0.0
-
-        net = income + expenses
-        return float(income), float(expenses), float(net)
+    return queries.get_summary(start, end)
 
 
 @st.cache_data
@@ -78,12 +62,7 @@ def load_recent(start: date, end: date, limit: int = 50):
 
 @st.cache_data
 def get_date_bounds() -> tuple[date | None, date | None]:
-    with SessionLocal() as session:
-        min_dt = session.scalar(select(func.min(Transaction.date)))
-        max_dt = session.scalar(select(func.max(Transaction.date)))
-    if min_dt is None or max_dt is None:
-        return None, None
-    return min_dt.date(), max_dt.date()
+    return queries.get_date_bounds()
 
 
 min_d, max_d = get_date_bounds()
