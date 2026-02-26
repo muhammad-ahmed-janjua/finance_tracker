@@ -5,7 +5,6 @@ import streamlit as st
 from sqlalchemy import select, func
 from datetime import datetime, time, timedelta, date
 
-
 from app.db import SessionLocal
 from app.models import Transaction
 
