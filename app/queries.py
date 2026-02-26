@@ -38,3 +38,25 @@ def get_summary(start: date, end: date) -> tuple[float, float, float]:
 
         net = income + expenses
         return float(income), float(expenses), float(net)
+
+
+def get_monthly_totals(start: date, end: date) -> "pd.DataFrame":
+    """Return DataFrame[month: str, total: float] grouped by YYYY-MM, ordered ascending."""
+    import pandas as pd
+
+    start_dt = datetime.combine(start, time.min)
+    end_dt_excl = datetime.combine(end + timedelta(days=1), time.min)
+
+    with SessionLocal() as session:
+        stmt = (
+            select(
+                func.strftime("%Y-%m", Transaction.date).label("month"),
+                func.sum(Transaction.amount).label("total"),
+            )
+            .where(Transaction.date >= start_dt, Transaction.date < end_dt_excl)
+            .group_by("month")
+            .order_by("month")
+        )
+        rows = session.execute(stmt).all()
+
+    return pd.DataFrame(rows, columns=["month", "total"])

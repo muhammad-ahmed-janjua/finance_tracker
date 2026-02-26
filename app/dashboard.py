@@ -19,23 +19,7 @@ def load_summary(start: date, end: date):
 
 @st.cache_data
 def load_monthly(start: date, end: date):
-    start_dt = datetime.combine(start, time.min)
-    end_dt_excl = datetime.combine(end + timedelta(days=1), time.min)
-
-    with SessionLocal() as session:
-        stmt = (
-            select(
-                func.strftime("%Y-%m", Transaction.date).label("month"),
-                func.sum(Transaction.amount).label("total"),
-            )
-            .where(Transaction.date >= start_dt, Transaction.date < end_dt_excl)
-            .group_by("month")
-            .order_by("month")
-        )
-        rows = session.execute(stmt).all()
-
-    df = pd.DataFrame(rows, columns=["month", "total"])
-    return df
+    return queries.get_monthly_totals(start, end)
 
 
 @st.cache_data
