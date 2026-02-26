@@ -1,6 +1,8 @@
 # 📊 Finance Tracker Dashboard (Streamlit)
 
 A demo-ready personal finance dashboard built with **Streamlit** to explore income, expenses, and net trends over time.
+![Overview](assets/overview.png)
+
 
 This project began as a rapid MVP and is evolving into a clean, extensible finance analysis tool focused on:
 
